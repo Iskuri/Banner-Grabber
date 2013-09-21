@@ -13,19 +13,22 @@ class SocketHandler:
 
 		try:
 			s.settimeout(5)
+			#print "Starting connection"
 			s.connect((self.ip, self.port))
-			s.setblocking(0)
+			#print "Connected"
+			#s.setblocking(0)
 			banner = ''
 
 			ready = select.select([s], [], [], 5)
 
-			while ready[0] and len(banner) < 10000:
+			while ready[0] and len(banner) < 1000:
 				try: 
 					banner += s.recv(1)
-					#print banner
+					#print "Got byte"
 				except:
 					break
 
+			#print "Saving banner"
 			return banner
 		except:
 			return ''
