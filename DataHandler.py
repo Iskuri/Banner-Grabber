@@ -13,10 +13,18 @@ class DataHandler:
 
 		self.conn.BeginTrans()
 
-		row = self.conn.GetRow("SELECT * FROM banners ORDER BY RAND() LIMIT 1");
-		print row
+		row = self.getRow("SELECT * FROM banners WHERE in_use IS FALSE AND dead_ip IS FALSE AND banner IS NULL ORDER BY RAND() LIMIT 1");
 
-		self.conn.Execute("UPDATE banners SET in_use = TRUE WHERE id = " + str(row['id']))
+		self.conn.Execute("UPDATE banners SET in_use = TRUE WHERE id = %d" % row['id'])
 
 		self.conn.CommitTrans()
 		return row['ip_address']
+
+	def getRow(self, query):
+
+		cursor = self.conn.Execute(query)
+                print cursor.GetRowAssoc(0)
+		return cursor.GetRowAssoc(0)
+	
+	def addIp(self, ip_address):
+		self.conn.Execute("INSERT INTO banners(ip_address) VALUES ('"+ip_address+"');")
