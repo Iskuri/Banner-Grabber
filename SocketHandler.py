@@ -21,8 +21,8 @@ class SocketHandler:
 
 			while ready[0] and len(banner) < 10000:
 				try: 
-					#banner += s.recv(1)
-					print banner
+					banner += s.recv(1)
+					#print banner
 				except:
 					break
 
