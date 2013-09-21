@@ -20,4 +20,7 @@ while True:
 	#Yes I understand that this is an awful hack
 	banner = banner.replace("'","\'")
 
-	dataHandler.setBanner(ip, banner)
+	try:
+		dataHandler.setBanner(ip, banner)
+	except:
+		print "Saving banner for "+ip+" failed!"
