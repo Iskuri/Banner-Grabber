@@ -12,16 +12,17 @@ class SocketHandler:
 		s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 		try:
-			s.settimeout(10)
+			s.settimeout(5)
 			s.connect((self.ip, self.port))
 			s.setblocking(0)
 			banner = ''
 
 			ready = select.select([s], [], [], 5)
 
-			while ready[0] and len(banner) < 100000:
+			while ready[0] and len(banner) < 10000:
 				try: 
 					banner += s.recv(1)
+					print banner
 				except:
 					break
 
