@@ -1,0 +1,654 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head><title>ADOdb for Python</title>
+  
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1"></head>
+<body>
+<h1>ADOdb for Python</h1>
+<p><font size="2">(c) 2004-2008 John Lim (jlim#natsoft.com) This software
+is licensed under a BSD-style license. See LICENSE.txt.</font></p>
+<p><a href="#introduction">Introduction</a><br>
+<a href="#databases">Databases Supported</a><br>
+<a href="#help">Bug Reports and Help</a><br>
+<a href="#install">Installation</a><br>
+<a href="#tutorial">Tutorial</a><br>
+<a href="#conn">Connection Examples</a><br>
+<a href="#fn">Function Reference</a><br>
+<a href="#err">Error Handling</a><br>
+<a href="#bind">Bind Parameters</a><br>
+  <a href="#changelog">Changelog</a></p>
+<h3><a name="introduction"></a>Introduction</h3>
+<p>ADOdb is a database abstraction library (modelled on Microsoft's
+database API's). ADOdb was originally developed for PHP, and ported to
+Python. The Python version implements a subset of the PHP version.
+ADOdb is licensed using a BSD-style license. </p>
+<p>Download: &nbsp;<a href="http://adodb.sourceforge.net/#pydownload">Python
+version</a>&nbsp;&nbsp;<a href="http://adodb.sourceforge.net/#download">PHP
+version</a></p>
+<p>You might ask why Python needs a database abstraction library when
+Python provides the official DB API. Unfortunately the DB API does not
+encapsulate differences in the database implementations. For example,
+to select a limited number of rows, say 10 rows, you would have to use
+very different SQL for different databases:</p>
+<table border="1" width="80%">
+  <tbody>
+    <tr>
+      <td>MS SQL</td>
+      <td>select top 10 from table</td>
+    </tr>
+    <tr>
+      <td>MySQL and PostgreSQL</td>
+      <td>select * from table limit 10</td>
+    </tr>
+    <tr>
+      <td>Oracle</td>
+      <td>select * from (select * from table) where rownum &lt;= 10</td>
+    </tr>
+  </tbody>
+</table>
+<p>These differences are handled by ADOdb (using <i>SelectLimit</i>),
+but not by the Python DB API. Other important database differences
+transparently handled by ADOdb include date-formating, associative
+arrays (records as dictionaries) and LOB-handling.</p>
+<p>This class library assumes you are using Python 2.3 or later.
+Internally it uses the standard Python 2.3 datetime class.</p>
+<h3><a name="databases"></a>Databases Supported</h3>
+<p>PHP bundles most database extensions in the official release. In
+Python, most database extensions are not part of the official release.
+You have to manually download and install the extensions yourself. The
+requirements are listed below:</p>
+<table border="1" width="95%">
+  <tbody>
+    <tr>
+      <td><b>Class</b></td>
+      <td><b>Requirements</b></td>
+      <td><b>Notes</b></td>
+    </tr>
+    <tr valign="top">
+      <td>odbc</td>
+      <td nowrap="nowrap">Download <a href="http://www.python.org/windows/win32/odbc.html">PythonWin</a>
+extension</td>
+      <td>
+      <p>No support for SelectLimit, UpdateBlob, UpdateBlobFile, Insert_ID,
+RecordCount and Affected_Rows.</p>
+      </td>
+    </tr>
+    <tr valign="top">
+      <td height="24">access</td>
+      <td nowrap="nowrap">Requires pyodbc.</td>
+      <td>&nbsp;Only SelectLimit( ) with no <i>offset</i> parameter supported. RecordCount( ) not supported.<br>
+</td>
+    </tr>
+    <tr valign="top">
+      <td height="24">mssql</td>
+      <td nowrap="nowrap">Requires pyodbc.</td>
+      <td>&nbsp;Only SelectLimit( ) with no <i>offset</i> parameter supported. RecordCount( ) not supported.</td>
+    </tr>
+    <tr valign="top">
+      <td>mysql</td>
+      <td nowrap="nowrap">Download <a href="http://sourceforge.net/projects/mysql-python">MySQL-python</a>
+extension</td>
+      <td>&nbsp;</td>
+    </tr>
+	    <tr valign="top">
+     
+      <td>
+      <p>SelectLimit( ) not supported. RecordCount( ) not supported.</p>
+	  
+    <tr valign="top">
+      <td>mxodbc</td>
+      <td>Superior <a href="http://www.egenix.com/files/python/mxODBC.html">odbc extension</a>.
+Licensing fee required for commercial use. <br>Switch to pyodbc if you want an open source odbc extension.</td>
+      <td>
+      <p>SelectLimit( ) not supported. RecordCount( ) not supported.</p>
+
+       </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">mxoracle<br>
+      </td>
+      <td style="vertical-align: top;">Requires mxodbc. Connect to Oracle using ODBC.<br>
+      </td>
+      <td style="vertical-align: top;">Only SelectLimit( ) with no <i>offset</i> parameter supported. Requires Oracle client installed. RecordCount( ) not supported.
+      </td>
+    </tr>
+<tr valign="top">
+      <td>oci8</td>
+      <td nowrap="nowrap">Download <a href="http://www.computronix.com/utilities.shtml">cx_Oracle</a>
+extension. Also requires Oracle client to be installed.<br>
+</td>
+      <td>
+      <p>Despite the name, it works with Oracle 8, 9 and later.
+SelectLimit( ) does not support the <i>offset</i> parameter. RecordCount( ) not supported.</p>
+      </td>
+    </tr>
+    <tr valign="top">
+      <td>odbc</td>
+      <td nowrap="nowrap">Download <a href="http://www.python.org/windows/win32/odbc.html">PythonWin</a>
+extension</td>
+      <td>
+      <p>SelectLimit( ) only works with Access,VFP and Microsoft SQL
+Server. The <i>offset</i> parameter is not supported.</p>
+      <p>No support for UpdateBlob, UpdateBlobFile, Insert_ID,
+RecordCount and Affected_Rows.</p>
+      </td>
+    </tr>
+    <tr valign="top">
+      <td>odbc_mssql</td>
+      <td nowrap="nowrap">Download <a href="http://www.python.org/windows/win32/odbc.html">PythonWin</a>
+extension</td>
+      <td>
+      <p> Same limitations as adodb_odbc extension, except that
+Insert_ID and Affected_Rows supported.</p>
+      </td>
+    </tr>
+    <tr valign="top">
+      <td height="24">postgres</td>
+      <td nowrap="nowrap">Download <a href="http://initd.org/Software/psycopg">psycopg</a> extension</td>
+      <td>&nbsp;</td>
+    </tr>
+	 <td>pyodbc</td>
+      <td nowrap="nowrap">Superior open source <a href="http://pyodbc.sourceforge.net/">odbc extension</a>.
+</td>
+    <tr valign="top">
+      <td height="24">vfp</td>
+      <td nowrap="nowrap">Requires pyodbc.</td>
+      <td>&nbsp;</td>
+    </tr><tr>
+      <td style="vertical-align: top;">sqlite<br>
+      </td>
+      <td style="vertical-align: top;">Requires <a href="http://initd.org/tracker/pysqlite">pysqlite</a>.<br>
+      </td>
+      <td style="vertical-align: top;">Contributed by Glenn Washburn.<br>
+      </td>
+    </tr>
+
+  </tbody>
+</table>
+<a name="install"></a>
+<h3>Installation</h3>
+<p>Run from the command prompt:</p>
+<p> <font face="Courier New, Courier, mono">&gt; python setup.py
+install</font></p>
+<p>This will perform the adodb package installation.</p>
+<p>You will need to install database specific extensions to use ADOdb
+for Python. </p>
+<h3><a name="help"></a>Bug Reports and Help</h3>
+To report bugs, discuss ADOdb, and ask for help, post to the forums at:
+<a href="http://phplens.com/lens/lensforum/topics.php?id=4">http://phplens.com/lens/lensforum/topics.php?id=4</a>
+<h3><a name="tutorial"></a>Tutorial</h3>
+<p>The easiest way to learn how to use ADOdb for python is with a few
+examples. Here's one that contrasts PHP with Python. This example
+select some data from a table, prints each row, then closes the
+connection.</p>
+<table border="1" width="50%">
+  <tbody>
+    <tr>
+      <td>PHP</td>
+      <td>Python</td>
+    </tr>
+    <tr valign="top">
+      <td>
+      <pre>include "adodb.inc.php";<br>$conn = adodb.NewADOConnection(<font color="#660000">'mysql'</font>);<br>$conn-&gt;Connect(<font color="#660000">'server','user','pwd','db'</font>);<br>$rs = $conn-&gt;Execute(<font color="#660000">'select * from table'</font>);<br><br>while (!$rs-&gt;EOF) {<br>	print_r($rs-&gt;fields);<br>	$rs-&gt;MoveNext();<br>}<br>$rs-&gt;Close();<br>$conn-&gt;Close();<br>	</pre>
+      </td>
+      <td>
+      <pre>import adodb;<br>conn = adodb.NewADOConnection(<font color="#660000">'mysql'</font>)<br>conn.Connect(<font color="#660000">'server','user','pwd','db'</font>)<br>cursor = conn.Execute(<font color="#660000">'select * from table'</font>)<br><br>while not cursor.EOF:<br>	print cursor.fields<br>	cursor.MoveNext()<br><br>cursor.Close()<br>conn.Close() <br></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+<p>First we create a database connection object, <i>conn</i>. Then we
+login to the database using Connect( ). We now call Execute( ) to
+compile and execute the given SQL. The will return a recordset or
+cursor that will hold the current row in the <i>fields</i> property.
+Fields are numerically indexed, starting at index zero. When we want to
+move to the next record, we call MoveNext( ) which also updates the <i>fields</i>
+property. Lastly, we check to see whether there are any more records
+left to process by monitoring the <i>EOF</i> property.</p>
+<p>As you can see, the PHP and Python code is very similar. The main
+difference is Execute( ) returns a recordset in PHP, while a cursor is
+returned in Python. A PHP recordset and Python cursor work identically
+with SELECT statements. However Python cursors work differently with
+INSERT/UPDATE/DELETE statements. You can see that below:</p>
+<table border="1" width="50%">
+  <tbody>
+    <tr>
+      <td>PHP</td>
+      <td>Python</td>
+    </tr>
+    <tr valign="top">
+      <td>
+      <pre>$sql = "update table set col='abc'";<br>$rs = $conn-&gt;Execute($sql);<br>$rows = $conn-&gt;Affected_Rows();<br></pre>
+      </td>
+      <td>
+      <pre>sql = "update table set col='abc'"<br>cursor = conn.Execute($sql)<br>rows = cursor.Affected_Rows()</pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+<p>In PHP, Affected_Rows( ) runs in the connection. In Python, all
+information related to an Execute( ) is retrieved from the cursor. This
+is because Python is multi-threaded, so it is no longer possible to
+store the affected_rows globally in the connection. Similarly,
+Insert_ID( ) is called from the cursor in Python.</p>
+<p>We support the iterator protocol, which allows you to iterate
+through the data using a for-loop:</p>
+<pre>cursor = conn.Execute('select * from table')<br><b>for row in cursor:</b>
+	print row
+
+
+<b>for row in conn.Execute('select id from table'):</b>
+	dofunction(row[0])</pre>
+<p>And we support associative arrays (dictionaries), where the keys are
+the field names:
+</p>
+<pre>cursor = conn.Execute('select id,name from table')<br>while not cursor.EOF:<br>	<b>arr = cursor.GetRowAssoc(0)</b> # 0 is lower, 1 is upper-case<br>	print  'id=',arr['id'],' name=',arr['name']<br>	cursor.MoveNext()<br></pre>
+<h3><a name="conn"></a>Connection Examples</h3>
+<pre># Oracle connection<br>import adodb<br>conn = adodb.NewADOConnection('oci8')<br>conn.Connect('scott/tiger@tns')<br>conn.Connect('tns', 'scott', 'tiger')<br><br># Oracle using connection string<br>import adodb<br>conn = adodb.NewADOConnection('oci8://scott:tiger@tns/')<br><br># MySQL<br>import adodb<br>conn = adodb.NewADOConnection('mysql')<br>conn.Connect('server', 'user', 'pwd', 'db')<br><br># MySQL using connection string<br>import adodb<br>conn = adodb.NewADOConnection('mysql://user:pwd@server/db')<br><br># PostgreSQL<br>import adodb<br>conn = adodb.NewADOConnection('postgres')<br>conn.Connect('server', 'user', 'pwd', 'db')<br>conn.Connect('host=server user=user password=pwd dbname=db port=4341')<br><br># ODBC<br>import adodb<br>conn = adodb.NewADOConnection('access') # mxodbc required<br>dsn = "Driver={Microsoft Access Driver (*.mdb)};Dbq=d:\\inetpub\\adodb\\northwind.mdb;"<br>conn.Connect(dsn)<br><br># ODBC for mssql<br>import adodb<br>conn = adodb.NewADOConnection('mssql') # mxodbc required<br>conn.Connect("Driver={SQL Server};Server=localhost;Database=northwind;")<br><br># sqlite<br>import adodb<br>conn = adodb.NewADOConnection('sqlite') # pysqlite required<br>conn.Connect(database = "c:\\sqlite\\mydata.db")<br></pre>
+<p>Other drivers such as "vfp" for foxpro are included.
+</p>
+<h3><a name="fn"></a>Function Reference</h3>
+<table border="1" width="80%">
+  <tbody>
+    <tr>
+      <td><b><a name="connclass"></a>Connection Class</b></td>
+      <td><b>Description</b></td>
+    </tr>
+    <tr valign="top">
+      <td nowrap="nowrap">Execute(sql, [params])</td>
+      <td>Execute <i>sql</i>, returning a <i>cursor</i> object. The
+optional <i>params</i> is a dictionary that contains the bind
+variables. All blob fields are automatically and transparently
+retrieved for you. </td>
+    </tr>
+    <tr valign="top">
+      <td nowrap="nowrap">SelectLimit(sql, limit, [offset])</td>
+      <td>Execute <i>sql</i>, retrieving only <i>limit</i> rows, an
+optional <i>offset</i> from the beginning of the recordset, returning
+a <i>cursor</i> object.</td>
+    </tr>
+    <tr valign="top">
+      <td nowrap="nowrap">
+      <p>UpdateBlob(table, field, blob,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; whereclause, blobtype='BLOB')</p>
+      </td>
+      <td>
+      <p>Executes the equivalent following sql statement:</p>
+      <p>UPDATE <i>table</i> SET <i>field</i> = <i>blob</i> WHERE <i>whereclause</i></p>
+      <p>The blobtype field should be set to either 'BLOB' or 'CLOB'.
+Any special encoding required for the <i>blob </i>is applied
+transparently.</p>
+      </td>
+    </tr>
+    <tr valign="top">
+      <td nowrap="nowrap">
+      <p>UpdateBlobFile(table, field, filepath,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; whereclause, blobtype='BLOB')</p>
+      </td>
+      <td>
+      <p>Loads the binary file <i>filepath</i> into <i>blob</i>. Then
+calls UpdateBlob( ).</p>
+      </td>
+    </tr>
+    <tr valign="top">
+      <td nowrap="nowrap">ErrorMsg( )</td>
+      <td>Returns last database error message. This function is not
+thread-safe. </td>
+    </tr>
+    <tr valign="top">
+      <td nowrap="nowrap">IsConnected( )</td>
+      <td>Returns boolean indicating whether connected.</td>
+    </tr>
+    <tr valign="top">
+      <td nowrap="nowrap">qstr(str)</td>
+      <td>Quotes a varchar or char variable.</td>
+    </tr>
+    <tr valign="top">
+      <td nowrap="nowrap">quote(str)</td>
+      <td>Synonym for qstr( )</td>
+    </tr>
+    <tr valign="top">
+      <td nowrap="nowrap">GetAll(sql)</td>
+      <td>Execute sql and return 2-dimensional array of tuples, the
+data recordset.</td>
+    </tr>
+    <tr valign="top">
+      <td nowrap="nowrap">GetArray(sql)</td>
+      <td>Synonym for GetAll(sql).</td>
+    </tr>
+    <tr valign="top">
+      <td nowrap="nowrap">GetRow(sql)</td>
+      <td>Execute sql and return first row of recordset as a tuple.</td>
+    </tr>
+    <tr valign="top">
+      <td nowrap="nowrap">GetOne(sql)</td>
+      <td>Execute sql and return 1 element of first row of recordset.</td>
+    </tr>
+    <tr valign="top">
+      <td nowrap="nowrap">GetAssoc(sql)</td>
+      <td>Returns a dictionary, with the first columns as the keys to
+the dictionary. If more than 2 columns are returned, then the
+dictionary values is a tuple of the 2nd to last columns. If 2 columns
+are returned, then the 2nd column becomes the dictionary values. If one
+column is returned, then the values are set to None.</td>
+    </tr>
+    <tr valign="top">
+      <td nowrap="nowrap">GetDict(sql)</td>
+      <td>Synonym for GetAssoc().</td>
+    </tr>
+    <tr valign="top">
+      <td nowrap="nowrap">GetCol(sql)</td>
+      <td>Returns the first column of each row as an array.</td>
+    </tr>
+    <tr valign="top">
+      <td nowrap="nowrap">MetaType(fieldtype)</td>
+      <td>Returns the ADOdb metatype of a native field type.
+      <ul>
+        <li><b>C</b>: character fields that fit into a text input field.</li>
+        <li><b>X</b>: larger character fields that fit into a textarea.</li>
+        <li><b>B</b>: Blobs, or Binary Large Objects. Typically images.
+        </li>
+        <li><b>D</b>: Date field</li>
+        <li><b>T</b>: Timestamp field</li>
+        <li><b>L</b>: Logical field (boolean or bit-field)</li>
+        <li><b>I</b>:&nbsp; Integer field</li>
+        <li><b>N</b>: Numeric field. Includes autoincrement, numeric,
+floating point, real and integer. </li>
+      </ul>
+      </td>
+    </tr>
+    <tr valign="top">
+      <td nowrap="nowrap">MetaColumns(table)</td>
+      <td>Returns a 2-dimensional array containing information on the
+fields of a table. Each row contains [fieldname, fieldtype, maxlength].
+Maxlength can be -1, indicating that the maximum length is not known.
+<p>
+Note that some databases return more information in each row.
+</p></td>
+    </tr>
+    <tr valign="top">
+      <td nowrap="nowrap">DBDate(datetime)</td>
+      <td>Given a Python 2.3 datetime object, convert into a date
+string acceptable to the database.</td>
+    </tr>
+    <tr valign="top">
+      <td nowrap="nowrap">DBTimeStamp(datetime)</td>
+      <td>Given a Python 2.3 datetime object, convert into a timestamp
+string acceptable to the database.</td>
+    </tr>
+    <tr valign="top">
+      <td nowrap="nowrap">Date(field)</td>
+      <td>Converts a date returned by a select statement into a Python
+2.3 datetime object</td>
+    </tr>
+    <tr valign="top">
+      <td nowrap="nowrap">TimeStamp(field)</td>
+      <td>Converts a timestamp returned by a select statement into a
+Python 2.3 datetime object</td>
+    </tr>
+    <tr valign="top">
+      <td nowrap="nowrap">BeginTrans( )</td>
+      <td>ADOdb defaults to auto-commit mode. Call BeginTrans( ) to
+start a transaction. This might not be thread-safe.</td>
+    </tr>
+    <tr valign="top">
+      <td nowrap="nowrap">RollbackTrans( )</td>
+      <td>Rollback transaction initiated by BeginTrans( ).</td>
+    </tr>
+    <tr valign="top">
+      <td nowrap="nowrap">CommitTrans( )</td>
+      <td>Commit transaction initiated by BeginTrans( ).</td>
+    </tr>
+    <tr valign="top">
+      <td nowrap="nowrap">Close( )</td>
+      <td>Close database connection. This is optional, as the
+connection is closed when the object is freed.</td>
+    </tr>
+    <tr valign="top">
+      <td nowrap="nowrap">Module( )</td>
+      <td>Returns the DB module object.</td>
+    </tr>
+    <tr valign="top">
+      <td nowrap="nowrap">Conn( )</td>
+      <td>Returns DB connection object.</td>
+    </tr>
+    <tr valign="top">
+      <td nowrap="nowrap">DriverInfo( )</td>
+      <td>Returns the threadsafety, apilevel and paramstyle values</td>
+    </tr>
+  </tbody>
+</table>
+<br>
+<table border="1" width="80%">
+  <tbody>
+    <tr valign="top">
+      <td><b>Connection Class Properties</b></td>
+      <td><b>Description</b></td>
+    </tr>
+    <tr valign="top">
+      <td nowrap="nowrap">debug</td>
+      <td>Set to 1 to output SQL generated to stdout. Set to 2 to
+output to stdout as HTML. Set to a filepath (a string) if you want the
+debug output to be logged into a file.</td>
+    </tr>
+    <tr valign="top">
+      <td nowrap="nowrap">getLOBs</td>
+      <td>Boolean that determines whether LOBs (large data objects) are
+loaded automatically. Default is True, autoload. For best performance
+(especially for cursors with no LOBs), set this to False.</td>
+    </tr>
+    <tr valign="top">
+      <td nowrap="nowrap">sysDate</td>
+      <td>SQL to generate current date.</td>
+    </tr>
+    <tr valign="top">
+      <td nowrap="nowrap">sysTimeStamp</td>
+      <td>SQL to generate current timestamp.</td>
+    </tr>
+  </tbody>
+</table>
+<br>
+
+<table border="1" width="80%">
+  <tbody>
+    <tr valign="top">
+      <td><b><a name="cursorclass"></a>Cursor Class Functions</b></td>
+      <td><b>Description</b></td>
+    </tr>
+    <tr valign="top">
+      <td nowrap="nowrap">RecordCount( )</td>
+      <td>Number of rows returned by SELECT statement, or number of
+rows affected by INSERT/UPDATE/DELETE. Returns -1 if not supported.</td>
+    </tr>
+    <tr valign="top">
+      <td nowrap="nowrap">Affected_Rows( )</td>
+      <td>Synonym for RecordCount( ).</td>
+    </tr>
+    <tr valign="top">
+      <td nowrap="nowrap">MoveNext( )</td>
+      <td>Move to next row of recordset. Returns current EOF value.</td>
+    </tr>
+    <tr valign="top">
+      <td nowrap="nowrap">FetchRow( )</td>
+      <td>Retrieves the current row of the recordset, then moves to the
+next row. The row retrieved is returned as a tuple.</td>
+    </tr>
+    <tr valign="top">
+      <td nowrap="nowrap">GetRowAssoc(upper=1)</td>
+      <td>Returns the current row as a dictionary, with the key's being
+the field names. Setting <i>upper</i> = 0 will lower-case the keys.
+Setting <i>upper</i>=1 will upper-case the keys. Setting <i>upper</i>
+to any other value, and the keys will be left in the natural case.</td>
+    </tr>
+    <tr valign="top">
+      <td nowrap="nowrap">Insert_ID( )</td>
+      <td>Returns last insert id generated by an auto-incrementing
+field. Only supported by <i>mysql</i> and <i>odbc_mssql</i> drivers
+currently.</td>
+    </tr>
+    <tr valign="top">
+      <td nowrap="nowrap">FetchField(fieldoffset)</td>
+      <td>
+      <p>Returns field information from a SELECT statement. The <i>fieldoffset</i>
+is zero-based, so to retrieve info on the 1st field use FetchField(0).
+A tuple is returned, consisting of:</p>
+      <p> (name, type_code,display_size, internal_size, precision,
+scale,null_ok).</p>
+      </td>
+    </tr>
+    <tr valign="top">
+      <td nowrap="nowrap">Close( )</td>
+      <td>Close cursor. This is optional, as the cursor is closed when
+the object is freed.</td>
+    </tr>
+    <tr valign="top">
+      <td nowrap="nowrap">Cursor( )</td>
+      <td>Returns DB cursor object.</td>
+    </tr>
+  </tbody>
+</table>
+<br>
+<table border="1" width="80%">
+  <tbody>
+    <tr valign="top">
+      <td><b>Cursor Class Properties</b></td>
+      <td><b>Description</b></td>
+    </tr>
+    <tr valign="top">
+      <td nowrap="nowrap">fields</td>
+      <td>Property that holds the current row of the recordset as a
+tuple (or list).</td>
+    </tr>
+    <tr valign="top">
+      <td nowrap="nowrap">EOF</td>
+      <td>When moving true the recordset, EOF is set to True after we
+pass the last row.</td>
+    </tr>
+  </tbody>
+</table>
+<h3><a name="err"></a>Error Handling</h3>
+<p>ADOdb for Python by default relies on the standard Python exception
+mechanism. Here's how to capture an error:</p>
+<pre>try:<br>	curs = conn.Execute('select * from badtable'); # table does not exist<br>except:<br>	print sys.exc_info()[1]; # retrieve the error message returned by database<br></pre>
+<p>Alternatively, you can use PHP style ErrorMsg( ) by setting the <i>connection.useExceptions</i>
+flag to True. ErrorMsg( ) is not thread-safe.</p>
+<pre>conn.useExceptions = False<br>curs = conn.Execute('select * from badtable'); # table does not exist<br>if curs == None: <br>	print conn.ErrorMsg()<br>
+</pre>
+<h3><a name="bind"></a>Bind Parameters</h3>
+<p>Python drivers do not use a consistent bind parameter convention. Here is
+  a brief summary of some drivers, obtained by running Connection.DriverInfo(
+  ), which outputs the following to the console: </p>
+
+
+<pre>Driver       = mysql<br>API Level    = 2.0<br>Param Style  = format<br>Thread Safety= 1  (0=none, 1=module, 2=connections, 3=cursors)<br><br>Driver       = oci8<br>API Level    = 2.0<br>Param Style  = named<br>Thread Safety= 2  (0=none, 1=module, 2=connections, 3=cursors)<br><br>Driver       = postgres<br>API Level    = 2.0<br>Param Style  = pyformat<br>Thread Safety= 2  (0=none, 1=module, 2=connections, 3=cursors)<br><br>Driver       = mssql (and all odbc drivers)<br>API Level    = 2.0<br>Param Style  = qmark</pre>
+
+
+The bind format you use is defined in Param Style. From the Python DB API docs:
+
+<pre>        paramstyle<br><br>           String constant stating the type of parameter marker<br>            formatting expected by the interface. Possible values are<br>            [2]:<br><br>                'qmark'         Question mark style, <br>                                e.g. '...WHERE name=?'<br>                'numeric'       Numeric, positional style, <br>                                e.g. '...WHERE name=:1'<br>                'named'         Named style, <br>                                e.g. '...WHERE name=:name'<br>                'format'        ANSI C printf format codes, <br>                                e.g. '...WHERE name=%s'<br>                'pyformat'      Python extended format codes, <br>                                e.g. '...WHERE name=%(name)s'<br><br></pre>
+
+<p>
+So for mysql:
+</p><pre>	cur_name = "snake"<br>	new_name = "turtle"<br> 	connection.Execute ("UPDATE animal SET name = %s WHERE name = %s", (new_name, cur_name))<br></pre>
+<p>
+For oci8, the <a href="http://starship.python.net/crew/atuining/cx_Oracle/html/cursorobj.html">cx_oracle
+docs</a> say:
+</p><blockquote>
+<p>Parameters may be passed as a dictionary or sequence or as keyword
+arguments. If the arguments are a dictionary, the values will be bound
+by name and if the arguments are a sequence the values will be bound by
+position.
+</p></blockquote>
+<p>For odbc, the paramstyle is qmark, eg. 
+  
+</p><pre>	connection.Execute('select * from table where id=?',(100,));</pre>
+  
+<h3><a name="changelog"></a>Change Log</h3>
+<p>Todo: add support for sequences. Need to add SelectLimit support for
+mxodbc derived classes.<br>
+
+<p><span style="font-style: italic;">2.10 July 2008</span><br>
+* Added support for pyodbc. Switched to using pyodbc for vfp, access and mssql drivers. <p>
+* Added minimal support for MetaColumns in odbc drivers.<p>
+</p>
+<p>
+<em>2.02 21 May 2007</em>
+<p>
+Added sqlite3 support for python 2.5.
+<p>
+Fixed GetRow _fixblob bug in oci8.
+
+</p>
+<p><span style="font-style: italic;">2.01 5 May 2006</span><br>
+Added lastrowid support to sqlite.<br>
+</p>
+<p>A _fixblob error in oci8, row.read( ) has been patched.<br>
+</p>
+<p>Odbc dsn generation problem, ";" not generated correctly. fixed.<br>
+
+</p>
+
+<p><span style="font-style: italic;">2.00 Nov 2005</span><br>
+Added sqlite support, thanks to Glenn Washburn. Improved installation with setup.py<br>
+</p>
+
+<p><span style="font-style: italic;">1.13 6 May 2005</span><br>
+</p>
+<p>Fixed oci8 blob bugs. Also updateclob( ) was not working.<br>
+</p>
+<p>Close calls close( ) before freeing connectoin object.<br>
+</p>
+
+
+<p><span style="font-style: italic;">1.12&nbsp; 24 March 2005</span><br>
+</p>
+<p>Added mxoracle driver (mxodbc for oracle)..<br>
+</p>
+<p>Fixed cursor iterator bug in mxodbc driver.<br>
+</p>
+
+<p><span style="font-style: italic;">1.11 23 Feb 2005
+</span><br>
+</p>
+<p>Fixed commit code for mysql driver.
+
+</p>
+<p><span style="font-style: italic;">1.10 21 Dec 2004</span>
+</p><p>
+Added sysDate and sysTimeStamp to mysql driver.
+</p><p>
+Added support for connection strings of the form <span style="font-style: italic;">driver://user:pwd@server/database</span> in NewADOConnection.</p>
+<p>DriverInfo( ) now checks paramStyle before thread safety, as some drivers
+do not implement thread safety. </p>
+<p>MySQL insert_id() changed to lastrowid as insert_id() deprecated. Thx Alex Verstraeten.
+</p><p>GetRow() now closes cursor. Thx Guoda Rugeviciute 
+</p><p>Postgresql metacolumns() did not work - not a tuple. Fixed. Thx Simon Hedberg.
+</p><p><i>1.01 30 July 2004</i><br>
+A debugging print in oci8 was removed.<br>
+</p>
+
+<p><i>1.00 12 July 2004</i></p>
+<p>GetRowAssoc(), upper = False not implemented correctly. Fixed.
+</p>
+<p>Tested with psyco. Works fine.
+</p>
+<p><i>0.90 15 Apr 2004</i></p>
+<p>Added ADONewConnection and NewADOConnection. </p>
+<p>Added GetAssoc, GetDict, GetArray and GetCol.
+</p>
+<p>Added mxodbc driver. Also vfp, access and mssql classes that inherit
+from mxodbc. Tested only on Windows. </p>
+<p>Added MetaColumns and MetaType support for Oracle, mxODBC, MySQL
+</p>
+<p>Perform explicit close for Get* functions.
+</p>
+<p><i>0.03 31 Jan 2004</i></p>
+<p>Implemented setup.py installer. </p>
+<p>Some postgres bugs fixed.</p>
+<p><i>0.02 28 Jan 2004</i></p>
+<p>Revised GetRowAssoc( ).</p>
+<p>Fixed use of false - should be False.
+</p>
+<p><i>0.01 25 Jan 2004</i><br>
+First Release. MySQL, Oracle, PostgreSQL, generic ODBC and ODBC for
+MSSQL drivers.</p>
+</body></html>
