@@ -11,7 +11,7 @@ class DataHandler:
 		
 	def getRandom(self):
 
-		self.conn.BeginTrans()
+		#self.conn.BeginTrans()
 
 		row = self.getRow("SELECT * FROM banners WHERE in_use IS FALSE AND dead_ip IS FALSE AND banner IS NULL ORDER BY RAND() LIMIT 1");
 
@@ -20,7 +20,7 @@ class DataHandler:
 
 		self.conn.Execute("UPDATE banners SET in_use = TRUE WHERE id = %d" % row['id'])
 
-		self.conn.CommitTrans()
+		#self.conn.CommitTrans()
 		return row['ip_address']
 
 	def getRow(self, query):
