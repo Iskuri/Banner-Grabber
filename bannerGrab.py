@@ -17,4 +17,7 @@ while True:
 	socksHandler = SocketHandler(ip)
 	banner = socksHandler.grabBanner()
 
+	#Yes I understand that this is an awful hack
+	banner = banner.replace("'","\'")
+
 	dataHandler.setBanner(ip, banner)
