@@ -15,6 +15,9 @@ class DataHandler:
 
 		row = self.getRow("SELECT * FROM banners WHERE in_use IS FALSE AND dead_ip IS FALSE AND banner IS NULL ORDER BY RAND() LIMIT 1");
 
+		if not row:
+			return ''
+
 		self.conn.Execute("UPDATE banners SET in_use = TRUE WHERE id = %d" % row['id'])
 
 		self.conn.CommitTrans()
@@ -23,8 +26,20 @@ class DataHandler:
 	def getRow(self, query):
 
 		cursor = self.conn.Execute(query)
-                print cursor.GetRowAssoc(0)
+
+		if cursor.EOF:
+			return {}
+
 		return cursor.GetRowAssoc(0)
 	
 	def addIp(self, ip_address):
-		self.conn.Execute("INSERT INTO banners(ip_address) VALUES ('"+ip_address+"');")
+
+		if not self.getRow("SELECT * FROM banners WHERE ip_address = '"+ip_address+"'"):
+			self.conn.Execute("INSERT INTO banners(ip_address) VALUES ('"+ip_address+"');")
+
+	def setBanner(self, ip_address, banner):
+
+		if banner == '':
+			self.conn.Execute("UPDATE banners SET dead_ip = TRUE, in_use = FALSE  WHERE ip_address = '"+ip_address+"'")			
+		else:
+			self.conn.Execute("UPDATE banners SET banner = '"+banner+"', in_use = FALSE WHERE ip_address = '"+ip_address+"'")
