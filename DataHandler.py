@@ -23,6 +23,21 @@ class DataHandler:
 		#self.conn.CommitTrans()
 		return row['ip_address']
 
+	def getRandomHTTPS(self):
+
+		#self.conn.BeginTrans()
+
+                row = self.getRow("SELECT * FROM banners WHERE in_use IS FALSE AND dead_ip IS FALSE AND https_page_content IS NULL ORDER BY RAND() LIMIT 1");
+
+                if not row:
+                        return ''
+
+                self.conn.Execute("UPDATE banners SET in_use = TRUE WHERE id = %d" % row['id'])
+
+                #self.conn.CommitTrans()
+                return row['ip_address']
+
+
 	def getRow(self, query):
 
 		cursor = self.conn.Execute(query)
@@ -43,3 +58,11 @@ class DataHandler:
 			self.conn.Execute("UPDATE banners SET dead_ip = TRUE, in_use = FALSE  WHERE ip_address = '"+ip_address+"'")			
 		else:
 			self.conn.Execute("UPDATE banners SET banner = '"+banner+"', in_use = FALSE WHERE ip_address = '"+ip_address+"'")
+
+	def setHTTPSPage(self, ip_address, response):
+
+	        if response == '':
+                        self.conn.Execute("UPDATE banners SET dead_ip = TRUE, in_use = FALSE  WHERE ip_address = '"+ip_address+"'")
+                else:
+                        self.conn.Execute("UPDATE banners SET https_page_content = %s, in_use = FALSE WHERE ip_address = '"+ip_address+"'", (response))
+	
